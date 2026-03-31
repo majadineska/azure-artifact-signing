@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "microsoft-learn": {
+      "type": "sse",
+      "url": "https://learn.microsoft.com/api/mcp",
+      "description": "Official Microsoft Learn MCP server — search docs, fetch articles, find code samples. No auth required."
+    }
+  }
+}

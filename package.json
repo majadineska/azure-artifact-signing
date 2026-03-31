@@ -1,0 +1,40 @@
+{
+  "name": "azure-artifact-signing-demo",
+  "version": "1.0.0",
+  "description": "Demo Electron app showcasing Azure Artifact Signing in GitHub Actions",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win --x64",
+    "build:win:unsigned": "electron-builder --win --x64 -c.win.signingHashAlgorithms=[]"
+  },
+  "build": {
+    "appId": "com.demo.azure-artifact-signing",
+    "productName": "AzureArtifactSigningDemo",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": null,
+      "signingHashAlgorithms": []
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}

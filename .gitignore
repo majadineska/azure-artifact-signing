@@ -1,0 +1,13 @@
+node_modules/
+dist/
+out/
+*.exe
+*.msi
+*.nupkg
+*.blockmap
+*.yml
+!.github/**/*.yml
+.env
+.env.*
+thumbs.db
+.DS_Store

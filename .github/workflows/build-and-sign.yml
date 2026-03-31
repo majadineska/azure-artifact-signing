@@ -1,0 +1,133 @@
+name: Build and Sign Electron App
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# OIDC federated credentials require id-token: write
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  # Azure Artifact Signing configuration
+  # These are set as GitHub repository secrets
+  AZURE_SIGNING_ENDPOINT: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+  AZURE_SIGNING_ACCOUNT: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+  AZURE_CERTIFICATE_PROFILE: ${{ secrets.AZURE_CERTIFICATE_PROFILE }}
+
+jobs:
+  build-and-sign:
+    name: Build & Sign Windows Electron App
+    runs-on: windows-latest
+
+    steps:
+      # ──────────────────────────────────────────────
+      # 1. Checkout source code
+      # ──────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ──────────────────────────────────────────────
+      # 2. Setup Node.js
+      # ──────────────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ──────────────────────────────────────────────
+      # 3. Install dependencies
+      # ──────────────────────────────────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ──────────────────────────────────────────────
+      # 4. Build unsigned Electron app
+      # ──────────────────────────────────────────────
+      - name: Build Electron app (unsigned)
+        run: npx electron-builder --win --x64
+
+      # ──────────────────────────────────────────────
+      # 5. Authenticate to Azure via OIDC
+      # ──────────────────────────────────────────────
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # ──────────────────────────────────────────────
+      # 6. Sign artifacts with Azure Artifact Signing
+      # ──────────────────────────────────────────────
+      - name: Sign with Azure Artifact Signing
+        uses: azure/trusted-signing-action@v0.5.0
+        with:
+          # Azure Artifact Signing account endpoint
+          endpoint: ${{ env.AZURE_SIGNING_ENDPOINT }}
+          # Artifact Signing account name
+          trusted-signing-account-name: ${{ env.AZURE_SIGNING_ACCOUNT }}
+          # Certificate profile name
+          certificate-profile-name: ${{ env.AZURE_CERTIFICATE_PROFILE }}
+          # Folder containing files to sign
+          files-folder: ${{ github.workspace }}/dist
+          # Only sign .exe files
+          files-folder-filter: exe
+          # Recursive search in the dist folder
+          files-folder-recurse: true
+          # RFC 3161 compliant timestamp server
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          # Signing digest algorithm
+          timestamp-digest: SHA256
+          # File digest algorithm
+          file-digest: SHA256
+          # Append signature (don't replace if already signed)
+          append-signature: false
+          # Use Azure CLI credential (from azure/login step)
+          exclude-environment-credential: true
+          exclude-workload-identity-credential: true
+          exclude-managed-identity-credential: true
+          exclude-shared-token-cache-credential: true
+          exclude-visual-studio-credential: true
+          exclude-visual-studio-code-credential: true
+          exclude-azure-cli-credential: false
+          exclude-azure-powershell-credential: true
+          exclude-azure-developer-cli-credential: true
+          exclude-interactive-browser-credential: true
+
+      # ──────────────────────────────────────────────
+      # 7. Verify the signature
+      # ──────────────────────────────────────────────
+      - name: Verify digital signature
+        shell: pwsh
+        run: |
+          $exeFiles = Get-ChildItem -Path "${{ github.workspace }}/dist" -Filter "*.exe" -Recurse
+          foreach ($file in $exeFiles) {
+            Write-Host "Verifying signature for: $($file.FullName)"
+            $sig = Get-AuthenticodeSignature -FilePath $file.FullName
+            Write-Host "  Status : $($sig.Status)"
+            Write-Host "  Signer : $($sig.SignerCertificate.Subject)"
+            Write-Host "  Issuer : $($sig.SignerCertificate.Issuer)"
+            Write-Host "  Thumbprint: $($sig.SignerCertificate.Thumbprint)"
+            Write-Host ""
+            if ($sig.Status -ne 'Valid') {
+              Write-Error "Signature verification FAILED for $($file.Name)"
+              exit 1
+            }
+            Write-Host "✅ Signature valid for $($file.Name)"
+          }
+
+      # ──────────────────────────────────────────────
+      # 8. Upload signed artifacts
+      # ──────────────────────────────────────────────
+      - name: Upload signed installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-electron-installer
+          path: |
+            dist/*.exe
+          retention-days: 30
+          if-no-files-found: error

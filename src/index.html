@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'" />
+  <title>Azure Artifact Signing Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0078d4 0%, #005a9e 50%, #003f72 100%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      text-align: center;
+      padding: 3rem;
+      max-width: 700px;
+    }
+    .logo {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      font-size: 1.1rem;
+      opacity: 0.85;
+      margin-bottom: 2rem;
+    }
+    .info-card {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .info-card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.9;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      text-align: left;
+    }
+    .info-grid dt { opacity: 0.7; font-size: 0.85rem; }
+    .info-grid dd { font-weight: 600; font-size: 0.95rem; }
+    .badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 0.4rem 1rem;
+      font-size: 0.85rem;
+      margin-top: 1rem;
+    }
+    .signed { color: #7fba00; }
+    .unsigned { color: #ffd700; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">🔐</div>
+    <h1>Azure Artifact Signing Demo</h1>
+    <p class="subtitle">Electron application signed with Azure Artifact Signing via GitHub Actions</p>
+
+    <div class="info-card">
+      <h2>Application Info</h2>
+      <dl class="info-grid" id="app-info"></dl>
+    </div>
+
+    <div class="info-card">
+      <h2>Signing Status</h2>
+      <p>This application was built and signed in a CI/CD pipeline using
+        <strong>Azure Artifact Signing</strong> with OIDC federated credentials.</p>
+      <div class="badge">✅ Signed with Azure Artifact Signing</div>
+    </div>
+  </div>
+
+  <script>
+    const info = window.appInfo;
+    const grid = document.getElementById('app-info');
+    const entries = [
+      ['Platform', info.platform],
+      ['Architecture', info.arch],
+      ['Electron', info.electronVersion],
+      ['Node.js', info.nodeVersion],
+    ];
+    entries.forEach(([label, value]) => {
+      grid.innerHTML += `<dt>${label}</dt><dd>${value}</dd>`;
+    });
+  </script>
+</body>
+</html>
