@@ -49,6 +49,8 @@ jobs:
       # ──────────────────────────────────────────────
       - name: Build Electron app (unsigned)
         run: npx electron-builder --win --x64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # ──────────────────────────────────────────────
       # 5. Authenticate to Azure via OIDC
